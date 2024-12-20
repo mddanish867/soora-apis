@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Users {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  username     String    @unique
+  password     String
+  otp          String? // OTP for verification
+  otpExpiresAt DateTime? // Expiration time for OTP
+  isVerified   Boolean   @default(false) // Status of verification
+  createdAt    DateTime  @default(now())
+}

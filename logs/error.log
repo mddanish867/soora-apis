@@ -6,3 +6,5 @@ Unique constraint failed on the fields: (`username`)
 2024-12-21T14:29:36.368Z [31merror[39m: Error during OTP generation: An error occurred while sending OTP email. Please check the logs for more details.
 2024-12-21T16:16:28.755Z [31merror[39m: Verification Error:
 2024-12-21T16:16:52.630Z [31merror[39m: Verification Error:
+2024-12-21T16:22:38.998Z [31merror[39m: Verification Error:
+2024-12-21T16:23:56.994Z [31merror[39m: Verification Error:

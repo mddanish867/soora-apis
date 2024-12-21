@@ -2,73 +2,109 @@ import { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import logger from "../../../lib/logger";
-import { randomInt } from "crypto"; // We'll use this for generating a numeric OTP
-import { sendOtpEmail } from "../../../helper/sendEmail"; // Importing the helper function
+import { randomInt } from "crypto";
+import { sendOtpEmail } from "../../../helper/sendEmail";
 
 const prisma = new PrismaClient();
 const saltRounds = 10;
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return res.status(405).json({ status: 405, message: "Method not allowed." });
   }
 
   const { email, password, username } = req.body;
 
   // Validate input fields
   if (!email || !password || !username) {
-    return res.status(400).json({ message: "All fields are required" });
+    return res
+      .status(400)
+      .json({ status: 400, message: "All fields are required." });
   }
 
   try {
-    // Check if user already exists by email
+    // Check if user already exists by username and isVerified
     const userExists = await prisma.users.findUnique({
+      where: { username },
+    });
+
+    if (userExists?.isVerified) {
+      return res
+        .status(400)
+        .json({
+          status: 400,
+          message: "Username already exists and is verified.",
+        });
+    }
+
+    // Check if user already exists by email
+    const userExistingEmail = await prisma.users.findUnique({
       where: { email },
     });
 
-    if (userExists) {
-      return res.status(400).json({ message: "User already exists." });
+    if (userExistingEmail) {
+      return res
+        .status(400)
+        .json({
+          status: 400,
+          message: "Email already exists. Please log in or reset your password.",
+        });
     }
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Generate 6-digit numeric OTP for email verification
-    const otp = randomInt(100000, 999999).toString(); // Ensures OTP is 6 digits
+    // OTP Expiry Date
+    const expiryDate = new Date();
+    expiryDate.setHours(expiryDate.getHours() + 1);
 
-    // Create user record in the database with isVerified as false, OTP and no expiration
+    // Generate 6-digit numeric OTP for email verification
+    const otp = randomInt(100000, 999999).toString();
+
+    // Create user record in the database with isVerified as false, OTP, and expiration
     await prisma.users.create({
       data: {
         email,
         username,
         password: hashedPassword,
         otp,
+        otpExpiresAt: expiryDate,
         isVerified: false,
       },
     });
 
     // Send OTP to the user's email using Resend API
-    const emailSent = await sendOtpEmail(email, otp);
+    const emailSent = await sendOtpEmail({ to: email, otp });
 
     if (emailSent) {
-      // Simulate sending OTP (for now, just log the OTP)
       logger.info(`OTP for verification sent to ${email}: ${otp}`);
       return res.status(201).json({
+        status: 201,
         message: "User registered successfully. Please verify your email.",
       });
     } else {
-      return res.status(500).json({ message: "Failed to send email with OTP." });
+      // Rollback user creation if OTP email fails
+      await prisma.users.delete({ where: { email } });
+
+      return res
+        .status(500)
+        .json({ status: 500, message: "Failed to send email with OTP." });
     }
   } catch (err) {
-    // Check if the error is an instance of Error
+    // Centralized error handling
+    logger.error("Error during user registration:", err);
+
     if (err instanceof Error) {
-      console.error("Error:", err.message); // Access error message
-      return res.status(500).json({ message: err.message });
-    } else {
-      console.error("Unknown error:", err); // Handle unknown error type
-      return res.status(500).json({ message: "An unknown error occurred." });
+      return res.status(500).json({ status: 500, message: err.message });
     }
+
+    return res
+      .status(500)
+      .json({ status: 500, message: "An unexpected error occurred." });
   } finally {
-    await prisma.$disconnect();  
+    await prisma.$disconnect();
   }
 }

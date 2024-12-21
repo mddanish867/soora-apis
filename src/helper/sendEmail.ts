@@ -1,21 +1,28 @@
 import axios from "axios";
 
+interface sendOTP 
+{
+  to: string, 
+  otp: string
+}
+
 // Helper function to send OTP via email using Resend
-export async function sendOtpEmail(to: string, otp: string) {
-  const resendApiKey = process.env.RESEND_API_KEY; // Get API key from environment variables
+export async function sendOtpEmail({to: email, otp}:sendOTP) {
+  const resendApiKey = process.env.RESEND_API_KEY; 
 
   if (!resendApiKey) {
     throw new Error("Resend API key is missing");
   }
 
   try {
+    
     // Send email using Resend API
     const response = await axios.post(
       "https://api.resend.com/emails", // Resend API endpoint
       {
-        from: "akhtardanish298@gmail.com", // Use your email address as the sender
-        to,
-        subject: "Email Verification OTP",
+        from: "onboarding@resend.dev", // Use your email address as the sender
+        to:email,
+        subject: "Soora | Email Verification OTP",        
         html: `<p>Your verification OTP is: <strong>${otp}</strong></p>`,
       },
       {
@@ -26,8 +33,8 @@ export async function sendOtpEmail(to: string, otp: string) {
       }
     );
 
-    if (response.status === 202) {
-      console.log(`OTP sent to ${to}`);
+    if (response.status === 200) {
+      console.log(`OTP sent to ${email}`);
       return true; // Email sent successfully
     } else {
       console.error(`Failed to send OTP email. Response status: ${response.status}, Response body: ${JSON.stringify(response.data)}`);

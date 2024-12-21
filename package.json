@@ -21,6 +21,7 @@
     "prisma": "^6.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "twilio": "^5.4.0",
     "winston": "^3.17.0"
   },
   "devDependencies": {

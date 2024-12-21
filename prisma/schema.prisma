@@ -10,11 +10,12 @@ datasource db {
 
 model Users {
   id           String    @id @default(uuid())
-  email        String    @unique
-  username     String    @unique
-  password     String
+  email        String?   @unique
+  username     String?    @unique
+  password     String?
+  mobile       String?   @unique
   otp          String? // OTP for verification
   otpExpiresAt DateTime? // Expiration time for OTP
-  isVerified   Boolean   @default(false) // Status of verification
+  isVerified   Boolean?   @default(false) // Status of verification
   createdAt    DateTime  @default(now())
 }

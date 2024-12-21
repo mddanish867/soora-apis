@@ -1,6 +1,12 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import jwt from "jsonwebtoken";
-import cookie from "cookie";
+import * as cookie from "cookie";
+
+interface JWTPayload {
+  userId: string;
+  email: string;
+  name?: string;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -8,53 +14,102 @@ export default async function handler(
 ) {
   try {
     if (req.method !== "POST") {
-      return res.status(405).json({ message: "Method not allowed" });
+      return res.status(405).json({ 
+        status: 405, 
+        message: "Method not allowed" 
+      });
     }
 
     const { refresh_token } = req.cookies;
 
     if (!refresh_token) {
-      return res.status(401).json({ message: "Refresh token is required." });
+      return res.status(401).json({ 
+        status: 401, 
+        message: "Refresh token is required." 
+      });
     }
 
-    // Verify the refresh token
-    const decoded = jwt.verify(
-      refresh_token,
-      process.env.JWT_REFRESH_SECRET as string
-    ) as { userId: string; email: string };
-
-    if (!decoded) {
-      return res.status(401).json({ message: "Invalid refresh token." });
+    // Verify JWT secrets are configured
+    if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
+      throw new Error("JWT secrets not configured");
     }
 
-    // Generate a new access token
-    const accessToken = jwt.sign(
-      { userId: decoded.userId, email: decoded.email },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "1h" }
-    );
+    try {
+      // Verify the refresh token
+      const decoded = jwt.verify(
+        refresh_token,
+        process.env.JWT_REFRESH_SECRET
+      ) as JWTPayload;
 
-    // Set new access token in the cookie
-    res.setHeader(
-      "Set-Cookie",
-      cookie.serialize("access_token", accessToken, {
+      // Generate a new access token
+      const accessToken = jwt.sign(
+        { 
+          userId: decoded.userId, 
+          email: decoded.email,
+          ...(decoded.name && { name: decoded.name })
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+      );
+
+      // Set new access token in the cookie
+      const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: "lax" as const,
         path: "/",
         maxAge: 60 * 60, // 1 hour
-      })
-    );
+      };
 
-    return res.status(200).json({ accessToken });
-  } catch (err) {
-    // Check if the error is an instance of Error
-    if (err instanceof Error) {
-      console.error("Error:", err.message); // Access error message
-      return res.status(500).json({ message: err.message });
-    } else {
-      console.error("Unknown error:", err); // Handle unknown error type
-      return res.status(500).json({ message: "An unknown error occurred." });
+      res.setHeader(
+        "Set-Cookie",
+        cookie.serialize("access_token", accessToken, cookieOptions)
+      );
+
+      return res.status(200).json({ 
+        status: 200,
+        message: "Access token refreshed successfully",
+      });
+    } catch (jwtError) {
+      // Handle specific JWT verification errors
+      if (jwtError instanceof jwt.TokenExpiredError) {
+        // Clear both tokens if refresh token is expired
+        res.setHeader(
+          "Set-Cookie",
+          [
+            cookie.serialize("access_token", "", {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax" as const,
+              path: "/",
+              maxAge: 0,
+            }),
+            cookie.serialize("refresh_token", "", {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax" as const,
+              path: "/",
+              maxAge: 0,
+            })
+          ]
+        );
+        
+        return res.status(401).json({ 
+          status: 401, 
+          message: "Refresh token has expired." 
+        });
+      }
+      
+      return res.status(401).json({ 
+        status: 401, 
+        message: "Invalid refresh token." 
+      });
     }
+  } catch (err) {
+    console.error("Error:", err);
+    return res.status(500).json({
+      status: 500,
+      message: err instanceof Error ? err.message : "An unknown error occurred.",
+    });
   }
 }

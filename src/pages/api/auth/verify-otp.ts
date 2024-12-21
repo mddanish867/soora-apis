@@ -8,16 +8,20 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // Check if method is POST, return early if not.
+  // Validate HTTP method
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return res
+      .status(405)
+      .json({ status: 405, message: "Method not allowed" });
   }
 
   const { email, otp } = req.body;
 
-  // Validate input
+  // Validate input fields
   if (!email || !otp) {
-    return res.status(400).json({ message: "Email and OTP are required." });
+    return res
+      .status(400)
+      .json({ status: 400, message: "Email and OTP are required." });
   }
 
   try {
@@ -26,34 +30,54 @@ export default async function handler(
       where: { email },
     });
 
-    // Handle user not found case
+    // Handle case when user not found
     if (!user) {
-      return res.status(404).json({ message: "User not found." });
+      return res
+        .status(404)
+        .json({ status: 404, message: "User not found." });
     }
 
     // Validate OTP
     if (user.otp !== otp) {
-      return res.status(400).json({ message: "Invalid OTP." });
+      return res
+        .status(400)
+        .json({ status: 400, message: "Invalid OTP." });
     }
 
     // Check if the user is already verified
     if (user.isVerified) {
-      return res.status(400).json({ message: "User already verified." });
+      return res
+        .status(400)
+        .json({
+          status: 400,
+          message: "User already verified.",
+        });
     }
 
-    // Update the user to verified and clear OTP
+    // Update the user's status to verified and clear OTP
     await prisma.users.update({
       where: { email },
-      data: { isVerified: true, otp: null },
+      data: {
+        isVerified: true,
+        otp: null,
+      },
     });
 
-    return res.status(200).json({ message: "User verified successfully." });
+    return res
+      .status(200)
+      .json({
+        status: 200,
+        message: "User verified successfully.",
+      });
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+    const errorMessage =
+      err instanceof Error
+        ? err.message
+        : "An unexpected error occurred.";
     logger.error("Verification Error:", errorMessage);
-    return res.status(500).json({ message: errorMessage });
+    return res.status(500).json({ status: 500, message: errorMessage });
   } finally {
-    // Ensure Prisma disconnects after request handling
+    // Ensure database connection is closed
     await prisma.$disconnect();
   }
 }

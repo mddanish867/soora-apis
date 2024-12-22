@@ -14,8 +14,22 @@ model Users {
   username     String?    @unique
   password     String?
   mobile       String?   @unique
+  name        String?
+  picture     String?
+  ssoProvider String?
+  ssoId       String?
+  lastLogin   DateTime @default(now())
   otp          String? // OTP for verification
+  otpAttempts        Int?      @default(0) // mobile otp rate limit
+  lastOtpRequestTime DateTime? @default(now()) //// mobile otp rate limit
   otpExpiresAt DateTime? // Expiration time for OTP
   isVerified   Boolean?   @default(false) // Status of verification
-  createdAt    DateTime  @default(now())
+  magicLink    String?    @unique // Secure random string for authentication
+  magicLinkExpiresAt    DateTime?  // Expiration time for the magic link
+  isMagicLinkUsed       Boolean?   @default(false) // Status to check if link is used
+  createdAt    DateTime?  @default(now())
+  updatedAt   DateTime? @updatedAt
+
+  @@index([email])
+  @@index([ssoId])
 }

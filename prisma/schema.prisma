@@ -27,6 +27,7 @@ model Users {
   magicLink    String?    @unique // Secure random string for authentication
   magicLinkExpiresAt    DateTime?  // Expiration time for the magic link
   isMagicLinkUsed       Boolean?   @default(false) // Status to check if link is used
+  is2FAEnabled   Boolean? // MFA tracking
   createdAt    DateTime?  @default(now())
   updatedAt   DateTime? @updatedAt
 

@@ -10,11 +10,15 @@ const prisma = new PrismaClient();
 const RATE_LIMIT_WINDOW = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
 const MAX_ATTEMPTS = 3; // Maximum attempts per window
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "POST") {
     return res.status(405).json({
+      success: false,
       status: 405,
-      message: "Method not allowed."
+      message: "Method not allowed.",
     });
   }
 
@@ -23,20 +27,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Enhanced mobile number validation
   if (!mobile) {
     return res.status(400).json({
+      success: false,
       status: 400,
-      message: "Mobile number is required."
+      message: "Mobile number is required.",
     });
   }
 
   // Format mobile number to E.164 format
-  const formattedMobile = mobile.startsWith('+') ? mobile : `+${mobile}`;
-  
+  const formattedMobile = mobile.startsWith("+") ? mobile : `+${mobile}`;
+
   // Validate mobile number format using regex
   const phoneRegex = /^\+[1-9]\d{1,14}$/;
   if (!phoneRegex.test(formattedMobile)) {
     return res.status(400).json({
+      success: false,
       status: 400,
-      message: "Invalid mobile number format. Please use E.164 format (e.g., +1234567890)"
+      message:
+        "Invalid mobile number format. Please use E.164 format (e.g., +1234567890)",
     });
   }
 
@@ -46,20 +53,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       where: { mobile: formattedMobile },
       select: {
         otpAttempts: true,
-        lastOtpRequestTime: true
-      }
+        lastOtpRequestTime: true,
+      },
     });
 
     const now = new Date();
     if (recentAttempts?.lastOtpRequestTime) {
-      const timeSinceLastRequest = now.getTime() - recentAttempts.lastOtpRequestTime.getTime();
-      
-      if (timeSinceLastRequest < RATE_LIMIT_WINDOW && 
-          (recentAttempts.otpAttempts || 0) >= MAX_ATTEMPTS) {
+      const timeSinceLastRequest =
+        now.getTime() - recentAttempts.lastOtpRequestTime.getTime();
+
+      if (
+        timeSinceLastRequest < RATE_LIMIT_WINDOW &&
+        (recentAttempts.otpAttempts || 0) >= MAX_ATTEMPTS
+      ) {
         return res.status(429).json({
+          success: false,
           status: 429,
           message: "Too many OTP requests. Please try again later.",
-          retryAfter: Math.ceil((RATE_LIMIT_WINDOW - timeSinceLastRequest) / 1000 / 60) // minutes
+          retryAfter: Math.ceil(
+            (RATE_LIMIT_WINDOW - timeSinceLastRequest) / 1000 / 60
+          ), // minutes
         });
       }
     }
@@ -73,18 +86,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const userData = {
       mobile: formattedMobile,
-      username: '',
-      password: '',
+      username: "",
+      password: "",
       otp,
       otpExpiresAt,
       isVerified: false,
       otpAttempts: 1,
-      lastOtpRequestTime: now
+      lastOtpRequestTime: now,
     };
 
     // Check if user exists or create a new user
     const existingUser = await prisma.users.findUnique({
-      where: { mobile: formattedMobile }
+      where: { mobile: formattedMobile },
     });
 
     if (existingUser) {
@@ -95,15 +108,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           otp,
           otpExpiresAt,
           otpAttempts: {
-            increment: 1
+            increment: 1,
           },
-          lastOtpRequestTime: now
-        }
+          lastOtpRequestTime: now,
+        },
       });
     } else {
       // Create a new user with mobile and OTP details
       await prisma.users.create({
-        data: userData
+        data: userData,
       });
     }
 
@@ -114,14 +127,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Rollback user creation if SMS failed
       if (!existingUser) {
         await prisma.users.delete({
-          where: { mobile: formattedMobile }
+          where: { mobile: formattedMobile },
         });
       }
 
       logger.error("SMS sending failed", { mobile: formattedMobile });
       return res.status(500).json({
+        success: false,
         status: 500,
-        message: "Failed to send OTP via SMS. Please try again."
+        message: "Failed to send OTP via SMS. Please try again.",
       });
     }
 
@@ -129,17 +143,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     logger.info("OTP sent successfully", { mobile: formattedMobile });
 
     return res.status(200).json({
+      success: true,
       status: 200,
-      message: `OTP sent successfully to ${formattedMobile}`
+      message: `OTP sent successfully to ${formattedMobile}`,
+    });
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : "An unexpected error occurred.";
+    logger.error("Verification Error:", {
+      error: errorMessage,
+      mobile: formattedMobile,
     });
 
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred.";
-    logger.error("Verification Error:", { error: errorMessage, mobile: formattedMobile });
-    
     return res.status(500).json({
+      success: false,
       status: 500,
-      message: "An error occurred while sending OTP."
+      message: "An error occurred while sending OTP.",
     });
   } finally {
     await prisma.$disconnect();

@@ -13,7 +13,9 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== "POST") {
-    return res.status(405).json({ status: 405, message: "Method not allowed." });
+    return res
+      .status(405)
+      .json({ success: false, status: 405, message: "Method not allowed." });
   }
 
   const { email, password, username } = req.body;
@@ -22,7 +24,11 @@ export default async function handler(
   if (!email || !password || !username) {
     return res
       .status(400)
-      .json({ status: 400, message: "All fields are required." });
+      .json({
+        success: false,
+        status: 400,
+        message: "All fields are required.",
+      });
   }
 
   try {
@@ -32,12 +38,11 @@ export default async function handler(
     });
 
     if (userExists?.isVerified) {
-      return res
-        .status(400)
-        .json({
-          status: 400,
-          message: "Username already exists and is verified.",
-        });
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "Username already exists and is verified.",
+      });
     }
 
     // Check if user already exists by email
@@ -46,12 +51,11 @@ export default async function handler(
     });
 
     if (userExistingEmail) {
-      return res
-        .status(400)
-        .json({
-          status: 400,
-          message: "Email already exists. Please log in or reset your password.",
-        });
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "Email already exists. Please log in or reset your password.",
+      });
     }
 
     // Hash the password
@@ -73,6 +77,7 @@ export default async function handler(
         otp,
         otpExpiresAt: expiryDate,
         isVerified: false,
+        is2FAEnabled: false,
       },
     });
 
@@ -82,7 +87,8 @@ export default async function handler(
     if (emailSent) {
       logger.info(`OTP for verification sent to ${email}: ${otp}`);
       return res.status(201).json({
-        status: 201,
+        success: true,
+        status: 200,
         message: "User registered successfully. Please verify your email.",
       });
     } else {
@@ -91,19 +97,29 @@ export default async function handler(
 
       return res
         .status(500)
-        .json({ status: 500, message: "Failed to send email with OTP." });
+        .json({
+          success: false,
+          status: 500,
+          message: "Failed to send email with OTP.",
+        });
     }
   } catch (err) {
     // Centralized error handling
     logger.error("Error during user registration:", err);
 
     if (err instanceof Error) {
-      return res.status(500).json({ status: 500, message: err.message });
+      return res
+        .status(500)
+        .json({ success: false, status: 500, message: err.message });
     }
 
     return res
       .status(500)
-      .json({ status: 500, message: "An unexpected error occurred." });
+      .json({
+        success: false,
+        status: 500,
+        message: "An unexpected error occurred.",
+      });
   } finally {
     await prisma.$disconnect();
   }

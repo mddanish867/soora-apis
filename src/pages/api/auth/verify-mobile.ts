@@ -12,6 +12,7 @@ export default async function handler(
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({
+      success: false,
       status: 405,
       message: "Method not allowed",
     });
@@ -21,6 +22,7 @@ export default async function handler(
 
   if (!mobile || !otp) {
     return res.status(400).json({
+      success: false,
       status: 400,
       message: "Mobile number and OTP are required.",
     });
@@ -38,6 +40,7 @@ export default async function handler(
 
     if (!user) {
       return res.status(404).json({
+        success: false,
         status: 404,
         message: "User not found.",
       });
@@ -46,6 +49,7 @@ export default async function handler(
     // Validate OTP
     if (user.otp !== otp) {
       return res.status(400).json({
+        success: false,
         status: 400,
         message: "Invalid OTP.",
       });
@@ -54,6 +58,7 @@ export default async function handler(
     // Check OTP expiration
     if (user.otpExpiresAt && user.otpExpiresAt < new Date()) {
       return res.status(400).json({
+        success: false,
         status: 400,
         message: "OTP has expired. Please request a new one.",
       });
@@ -101,6 +106,7 @@ export default async function handler(
     ]);
 
     return res.status(200).json({
+      success: true,
       status: 200,
       message: "User verified successfully.",
       user: {
@@ -113,7 +119,9 @@ export default async function handler(
     const errorMessage =
       err instanceof Error ? err.message : "An unexpected error occurred.";
     logger.error("Verification Error:", errorMessage);
-    return res.status(500).json({ status: 500, message: errorMessage });
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: errorMessage });
   } finally {
     await prisma.$disconnect();
   }

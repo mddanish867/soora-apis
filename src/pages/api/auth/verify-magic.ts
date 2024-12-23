@@ -5,17 +5,24 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   try {
     if (req.method !== "POST") {
-      return res.status(405).json({ status: 405, message: "Method not allowed." });
+      return res
+        .status(405)
+        .json({ success: false, status: 405, message: "Method not allowed." });
     }
 
     const { token } = req.body;
 
     // Validate the token field
     if (!token) {
-      return res.status(400).json({ status: 400, message: "Token is required." });
+      return res
+        .status(400)
+        .json({ success: false, status: 400, message: "Token is required." });
     }
 
     // Check if token exists and is valid
@@ -31,6 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!user) {
       return res.status(400).json({
+        success: false,
         status: 400,
         message: "Invalid or expired magic link.",
       });
@@ -70,21 +78,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     // Set access token and refresh token cookies
-    res.setHeader(
-      "Set-Cookie",
-      [
-        cookie.serialize("access_token", accessToken, {
-          ...cookieOptions,
-          maxAge: 60 * 60, // 1 hour
-        }),
-        cookie.serialize("refresh_token", refreshToken, {
-          ...cookieOptions,
-          maxAge: 60 * 60 * 24 * 7, // 7 days
-        }),
-      ]
-    );
+    res.setHeader("Set-Cookie", [
+      cookie.serialize("access_token", accessToken, {
+        ...cookieOptions,
+        maxAge: 60 * 60, // 1 hour
+      }),
+      cookie.serialize("refresh_token", refreshToken, {
+        ...cookieOptions,
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      }),
+    ]);
 
     return res.status(200).json({
+      success: true,
       status: 200,
       message: "Logged in successfully via magic link.",
       user: {
@@ -95,8 +101,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (err) {
     console.error("Error:", err);
     return res.status(500).json({
+      success: false,
       status: 500,
-      message: err instanceof Error ? err.message : "An unknown error occurred.",
+      message:
+        err instanceof Error ? err.message : "An unknown error occurred.",
     });
   } finally {
     await prisma.$disconnect();

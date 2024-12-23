@@ -13,14 +13,16 @@ export default async function handler(
   if (req.method !== "POST") {
     return res
       .status(405)
-      .json({ status: 405, message: "Method not allowed." });
+      .json({ success: false, status: 405, message: "Method not allowed." });
   }
 
   const { email } = req.body;
 
   // Validate input fields
   if (!email) {
-    return res.status(400).json({ status: 400, message: "Email is required." });
+    return res
+      .status(400)
+      .json({ success: false, status: 400, message: "Email is required." });
   }
 
   try {
@@ -47,7 +49,7 @@ export default async function handler(
           magicLinkExpiresAt: expiryDate,
           isMagicLinkUsed: false,
         },
-      });      
+      });
     } else {
       // Create a new user with magic link
       await prisma.users.create({
@@ -70,11 +72,13 @@ export default async function handler(
     if (emailSent) {
       logger.info(`Magic link sent to ${email}: ${magicLink}`);
       return res.status(200).json({
+        success: true,
         status: 200,
         message: "Magic link has been sent to your email.",
       });
     } else {
       return res.status(500).json({
+        success: false,
         status: 500,
         message: "Failed to send the email. Please try again later.",
       });
@@ -84,12 +88,16 @@ export default async function handler(
     logger.error("Error during sending magic link:", err);
 
     if (err instanceof Error) {
-      return res.status(500).json({ status: 500, message: err.message });
+      return res
+        .status(500)
+        .json({ success: false, status: 500, message: err.message });
     }
 
-    return res
-      .status(500)
-      .json({ status: 500, message: "An unexpected error occurred." });
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "An unexpected error occurred.",
+    });
   } finally {
     await prisma.$disconnect();
   }

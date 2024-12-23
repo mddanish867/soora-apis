@@ -15,3 +15,11 @@ Invalid `prisma.users.create()` invocation:
 
 
 Null constraint violation on the fields: (`updatedAt`)
+2024-12-23T14:40:38.115Z [31merror[39m: Error during sending magic link: 
+Invalid `prisma.users.findUnique()` invocation:
+
+
+Can't reach database server at `aws-0-ap-southeast-1.pooler.supabase.com:6543`
+
+Please make sure your database server is running at `aws-0-ap-southeast-1.pooler.supabase.com:6543`.
+2024-12-23T16:50:06.328Z [31merror[39m: Error during OTP generation: An error occurred while sending OTP email. Please check the logs for more details.

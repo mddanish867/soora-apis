@@ -11,18 +11,20 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== "POST") {
-    return res.status(405).json({ 
-      status: 405, 
-      message: "Method not allowed" 
+    return res.status(405).json({
+      success: false,
+      status: 405,
+      message: "Method not allowed",
     });
   }
 
   const { email, otp } = req.body;
 
   if (!email || !otp) {
-    return res.status(400).json({ 
-      status: 400, 
-      message: "Email and OTP are required." 
+    return res.status(400).json({
+      success: false,
+      status: 400,
+      message: "Email and OTP are required.",
     });
   }
 
@@ -38,28 +40,30 @@ export default async function handler(
     });
 
     if (!user) {
-      return res.status(404).json({ 
-        status: 404, 
-        message: "User not found." 
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: "User not found.",
       });
     }
 
     // Validate OTP
     if (user.otp !== otp) {
-      return res.status(400).json({ 
-        status: 400, 
-        message: "Invalid OTP." 
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "Invalid OTP.",
       });
     }
 
     // Check OTP expiration
     if (user.otpExpiresAt && user.otpExpiresAt < new Date()) {
       return res.status(400).json({
+        success: false,
         status: 400,
         message: "OTP has expired. Please request a new one.",
       });
     }
- 
 
     // Generate tokens
     const accessToken = jwt.sign(
@@ -92,43 +96,42 @@ export default async function handler(
       path: "/",
     };
 
-    res.setHeader(
-      "Set-Cookie",
-      [
-        cookie.serialize("access_token", accessToken, {
-          ...cookieOptions,
-          maxAge: 60 * 60, // 1 hour
-        }),
-        cookie.serialize("refresh_token", refreshToken, {
-          ...cookieOptions,
-          maxAge: 60 * 60 * 24 * 7, // 7 days
-        })
-      ]
-    );
+    res.setHeader("Set-Cookie", [
+      cookie.serialize("access_token", accessToken, {
+        ...cookieOptions,
+        maxAge: 60 * 60, // 1 hour
+      }),
+      cookie.serialize("refresh_token", refreshToken, {
+        ...cookieOptions,
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      }),
+    ]);
 
     return res.status(200).json({
+      success: true,
       status: 200,
       message: "User verified successfully.",
       user: {
         id: user.id,
         email: user.email,
-        isVerified: true
-      }
+        isVerified: true,
+      },
     });
-
   } catch (err) {
     logger.error("Verification Error:", err);
-    
+
     if (err instanceof Error) {
-      return res.status(500).json({ 
-        status: 500, 
-        message: err.message 
+      return res.status(500).json({
+        success: false,
+        status: 500,
+        message: err.message,
       });
     }
-    
-    return res.status(500).json({ 
-      status: 500, 
-      message: "An unexpected error occurred." 
+
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "An unexpected error occurred.",
     });
   } finally {
     await prisma.$disconnect();

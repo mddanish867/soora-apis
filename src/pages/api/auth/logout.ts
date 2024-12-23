@@ -9,38 +9,37 @@ export default async function handler(
     if (req.method !== "POST") {
       return res
         .status(405)
-        .json({ status: 405, message: "Method not allowed" });
+        .json({ success: false, status: 405, message: "Method not allowed" });
     }
 
     // Clear the access token and refresh token cookies
-    res.setHeader(
-      "Set-Cookie",
-      [
-        cookie.serialize("access_token", "", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: -1, // Expire immediately
-        }),
-        cookie.serialize("refresh_token", "", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: -1, // Expire immediately
-        }),
-      ]
-    );
+    res.setHeader("Set-Cookie", [
+      cookie.serialize("access_token", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: -1, // Expire immediately
+      }),
+      cookie.serialize("refresh_token", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: -1, // Expire immediately
+      }),
+    ]);
 
     return res
       .status(200)
-      .json({ status: 200, message: "Logged out successfully" });
+      .json({ success: true, status: 200, message: "Logged out successfully" });
   } catch (err) {
     console.error("Error:", err);
     return res.status(500).json({
+      success: false,
       status: 500,
-      message: err instanceof Error ? err.message : "An unknown error occurred.",
+      message:
+        err instanceof Error ? err.message : "An unknown error occurred.",
     });
   }
 }

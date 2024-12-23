@@ -31,7 +31,6 @@ export default async function handler(
     const expiryDate = new Date();
     expiryDate.setHours(expiryDate.getHours() + 1); // Magic link expires in 1 hour
 
-    let message;
     const baseUrl = process.env.BASE_URL || "http://localhost:3000"; // Use actual base URL in production
     const magicLinkUrl = `${baseUrl}/verify-magic-?token=${magicLink}`;
 

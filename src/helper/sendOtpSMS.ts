@@ -1,4 +1,3 @@
-import twilio from 'twilio';
 import { validateTwilioConfig } from './validateTwilioConfig ';
 import logger from '../lib/logger';
 

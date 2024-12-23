@@ -32,8 +32,6 @@ export default async function handler(
   res: NextApiResponse
 ) {
   await loginRateLimit(req, res, async () => {
-    const { provider } = req.query;
-
     switch (req.method) {
       case "GET":
         try {
@@ -77,7 +75,7 @@ export async function callbackHandler(
       throw new Error("Invalid state parameter");
     }
 
-    const { user, tokens } = await ssoService.handleCallback(code as string);
+    const { tokens } = await ssoService.handleCallback(code as string);
 
     // Clear state cookie
     res.setHeader("Set-Cookie", [

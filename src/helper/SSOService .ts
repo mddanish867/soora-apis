@@ -1,6 +1,6 @@
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, } from '@prisma/client';
 import { Redis } from 'ioredis';
 
 const prisma = new PrismaClient();
@@ -29,6 +29,16 @@ interface UserPayload {
   family_name?: string;
 }
 
+interface UserSession {
+  id: string;
+  email: string | null;
+  name: string | null;
+  picture: string | null;
+  isVerified: boolean | null;
+  lastLogin: Date;
+  ssoProvider: string | null;
+}
+
 export class SSOService {
   private oauthClient: OAuth2Client;
   private config: SSOConfig;
@@ -42,7 +52,6 @@ export class SSOService {
     );
   }
 
-  // Generate OAuth URL for login
   async getAuthUrl(state: string): Promise<string> {
     return this.oauthClient.generateAuthUrl({
       access_type: 'offline',
@@ -51,11 +60,11 @@ export class SSOService {
         'https://www.googleapis.com/auth/userinfo.email',
       ],
       state,
-      prompt: 'consent', // Force consent screen to ensure refresh token
+      prompt: 'consent',
     });
   }
 
-  async handleCallback(code: string): Promise<{ user: any; tokens: TokenSet }> {
+  async handleCallback(code: string): Promise<{  tokens: TokenSet }> {
     try {
       const { tokens } = await this.oauthClient.getToken(code);
       this.oauthClient.setCredentials(tokens);
@@ -67,19 +76,13 @@ export class SSOService {
 
       const payload = ticket.getPayload() as UserPayload;
       const user = await this.findOrCreateUser(payload);
-
-      // Generate token set
       const tokenSet = await this.generateTokenSet(user.id);
-
-      // Store refresh token
       await this.storeRefreshToken(user.id, tokenSet.refreshToken);
-
-      // Update last login
       await this.updateLastLogin(user.id);
 
-      return { user, tokens: tokenSet };
-    } catch (error) {
-      console.error('SSO callback error:', error);
+      return {tokens: tokenSet };
+    } catch (err) {
+      console.error('SSO callback error:', err);
       throw new Error('Authentication failed');
     }
   }
@@ -87,31 +90,24 @@ export class SSOService {
   private async findOrCreateUser(payload: UserPayload) {
     const { sub, email, name, picture, email_verified, given_name, family_name } = payload;
 
-    try {
-      const user = await prisma.users.upsert({
-        where: { email },
-        update: {
-          name: name || `${given_name} ${family_name}`.trim(),
-          picture,
-          lastLogin: new Date(),
-          isVerified: email_verified || false,
-        },
-        create: {
-          email,
-          name: name || `${given_name} ${family_name}`.trim(),
-          picture: picture || '',
-          ssoProvider: this.config.provider,
-          ssoId: sub,
-          isVerified: email_verified || false,
-          lastLogin: new Date(),
-        },
-      });
-
-      return user;
-    } catch (error) {
-      console.error('Error finding/creating user:', error);
-      throw new Error('Failed to process user data');
-    }
+    return await prisma.users.upsert({
+      where: { email },
+      update: {
+        name: name || `${given_name} ${family_name}`.trim(),
+        picture,
+        lastLogin: new Date(),
+        isVerified: email_verified || false,
+      },
+      create: {
+        email,
+        name: name || `${given_name} ${family_name}`.trim(),
+        picture: picture || '',
+        ssoProvider: this.config.provider,
+        ssoId: sub,
+        isVerified: email_verified || false,
+        lastLogin: new Date(),
+      },
+    });
   }
 
   private async generateTokenSet(userId: string): Promise<TokenSet> {
@@ -130,39 +126,34 @@ export class SSOService {
     return {
       accessToken,
       refreshToken,
-      expiresIn: 3600 // 1 hour in seconds
+      expiresIn: 3600
     };
   }
 
   private async storeRefreshToken(userId: string, refreshToken: string): Promise<void> {
     const key = `refresh_token:${userId}`;
-    await redis.set(key, refreshToken, 'EX', 7 * 24 * 60 * 60); // 7 days expiry
+    await redis.set(key, refreshToken, 'EX', 7 * 24 * 60 * 60);
   }
 
   async refreshTokens(refreshToken: string): Promise<TokenSet | null> {
     try {
-      // Verify refresh token
       const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as jwt.JwtPayload;
       
       if (decoded.type !== 'refresh') {
         throw new Error('Invalid token type');
       }
 
-      // Check if refresh token is valid in Redis
       const storedToken = await redis.get(`refresh_token:${decoded.userId}`);
       if (!storedToken || storedToken !== refreshToken) {
         throw new Error('Invalid refresh token');
       }
 
-      // Generate new token set
       const tokenSet = await this.generateTokenSet(decoded.userId);
-
-      // Update stored refresh token
       await this.storeRefreshToken(decoded.userId, tokenSet.refreshToken);
 
       return tokenSet;
-    } catch (error) {
-      console.error('Token refresh error:', error);
+    } catch (err) {
+      console.error('Token refresh error:', err);
       return null;
     }
   }
@@ -171,30 +162,24 @@ export class SSOService {
     await redis.del(`refresh_token:${userId}`);
   }
 
-  // Verify access token and get user
-  async verifyAccessToken(accessToken: string): Promise<any> {
-    try {
-      const decoded = jwt.verify(accessToken, process.env.JWT_SECRET!) as jwt.JwtPayload;
-      
-      if (decoded.type !== 'access') {
-        throw new Error('Invalid token type');
-      }
-
-      const user = await prisma.users.findUnique({
-        where: { id: decoded.userId },
-      });
-
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      return user;
-    } catch (error) {
-      throw new Error('Invalid access token');
+  async verifyAccessToken(accessToken: string) {
+    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET!) as jwt.JwtPayload;
+    
+    if (decoded.type !== 'access') {
+      throw new Error('Invalid token type');
     }
+
+    const user = await prisma.users.findUnique({
+      where: { id: decoded.userId },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return user;
   }
 
-  // Update user's last login
   private async updateLastLogin(userId: string): Promise<void> {
     await prisma.users.update({
       where: { id: userId },
@@ -202,33 +187,27 @@ export class SSOService {
     });
   }
 
-  // Get user session info
-  async getUserSession(userId: string): Promise<any> {
-    try {
-      const user = await prisma.users.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          picture: true,
-          isVerified: true,
-          lastLogin: true,
-          ssoProvider: true,
-        },
-      });
+  async getUserSession(userId: string): Promise<UserSession> {
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        picture: true,
+        isVerified: true,
+        lastLogin: true,
+        ssoProvider: true,
+      },
+    });
 
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      return user;
-    } catch (error) {
-      throw new Error('Failed to get user session');
+    if (!user) {
+      throw new Error('User not found');
     }
+
+    return user;
   }
 
-  // Check if email is already registered
   async isEmailRegistered(email: string): Promise<boolean> {
     const user = await prisma.users.findUnique({
       where: { email },

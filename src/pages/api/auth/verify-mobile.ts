@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
-import * as cookie from "cookie";
+import { serialize } from "cookie";
 import logger from "../../../lib/logger";
 
 const prisma = new PrismaClient();
@@ -89,14 +89,14 @@ export default async function handler(
 
     // Set cookies for session
     res.setHeader("Set-Cookie", [
-      cookie.serialize("access_token", accessToken, {
+      serialize("access_token", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 60 * 60, // 1 hour
         path: "/",
       }),
-      cookie.serialize("refresh_token", refreshToken, {
+      serialize("refresh_token", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import * as cookie from "cookie";
+import { serialize } from "cookie";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -86,11 +86,11 @@ export default async function handler(
     };
 
     res.setHeader("Set-Cookie", [
-      cookie.serialize("access_token", accessToken, {
+      serialize("access_token", accessToken, {
         ...cookieOptions,
         maxAge: 60 * 60,
       }),
-      cookie.serialize("refresh_token", refreshToken, {
+      serialize("refresh_token", refreshToken, {
         ...cookieOptions,
         maxAge: 60 * 60 * 24 * 7,
       }),

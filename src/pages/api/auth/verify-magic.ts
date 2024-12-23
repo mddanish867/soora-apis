@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import jwt from "jsonwebtoken";
-import * as cookie from "cookie";
+import { serialize } from "cookie";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -79,11 +79,11 @@ export default async function handler(
 
     // Set access token and refresh token cookies
     res.setHeader("Set-Cookie", [
-      cookie.serialize("access_token", accessToken, {
+      serialize("access_token", accessToken, {
         ...cookieOptions,
         maxAge: 60 * 60, // 1 hour
       }),
-      cookie.serialize("refresh_token", refreshToken, {
+      serialize("refresh_token", refreshToken, {
         ...cookieOptions,
         maxAge: 60 * 60 * 24 * 7, // 7 days
       }),

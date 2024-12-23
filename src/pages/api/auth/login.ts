@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import * as cookie from "cookie"; // Fixed import
+import * as cookie from "cookie";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -27,18 +27,16 @@ export default async function handler(
       });
     }
 
-    // Fetch user by email
     const user = await prisma.users.findUnique({
       where: { email },
     });
 
-    if (!user) {
+    if (!user || !user.password) {
       return res
         .status(404)
         .json({ success: false, status: 404, message: "User not found." });
     }
 
-    // Check if the password is correct
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -49,8 +47,7 @@ export default async function handler(
       });
     }
 
-    // Check if user is verified
-    if (!user.isVerified) {
+    if (user.isVerified === false) {
       return res.status(401).json({
         success: false,
         status: 401,
@@ -58,26 +55,29 @@ export default async function handler(
       });
     }
 
-    // Verify JWT secrets are configured
     if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
       throw new Error("JWT secrets not configured");
     }
 
-    // Generate JWT access token (expires in 1 hour)
     const accessToken = jwt.sign(
-      { userId: user.id, email: user.email, name: user.username },
+      { 
+        userId: user.id, 
+        email: user.email || '', 
+        name: user.username || '' 
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // Generate JWT refresh token (expires in 7 days)
     const refreshToken = jwt.sign(
-      { userId: user.id, email: user.email },
+      { 
+        userId: user.id, 
+        email: user.email || '' 
+      },
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: "7d" }
     );
 
-    // Set cookies
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -85,15 +85,14 @@ export default async function handler(
       path: "/",
     };
 
-    // Set access token cookie
     res.setHeader("Set-Cookie", [
       cookie.serialize("access_token", accessToken, {
         ...cookieOptions,
-        maxAge: 60 * 60, // 1 hour
+        maxAge: 60 * 60,
       }),
       cookie.serialize("refresh_token", refreshToken, {
         ...cookieOptions,
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7,
       }),
     ]);
 

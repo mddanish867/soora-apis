@@ -31,3 +31,16 @@ Can't reach database server at `aws-0-ap-southeast-1.pooler.supabase.com:6543`
 
 Please make sure your database server is running at `aws-0-ap-southeast-1.pooler.supabase.com:6543`.
 2024-12-24T05:45:16.335Z [31merror[39m: Upload error: formidable__WEBPACK_IMPORTED_MODULE_0__.default.IncomingForm is not a constructor
+2024-12-24T13:31:46.949Z [31merror[39m: Conversion error: 
+Invalid `prisma.document.findUnique()` invocation:
+
+{
+  where: {
+    id: "5"
+        ~~~
+  }
+}
+
+Argument `id`: Invalid value provided. Expected Int, provided String.
+2024-12-24T13:32:18.959Z [31merror[39m: Conversion error: Failed to convert Word document to PDF.
+2024-12-24T13:42:59.463Z [31merror[39m: Conversion error: Failed to convert Word document to PDF.

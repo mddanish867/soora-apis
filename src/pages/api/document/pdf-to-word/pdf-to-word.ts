@@ -29,25 +29,22 @@ export default async function handler(
   }
 
   try {
-    const document = await prisma.document.findUnique({
-      where: { id: Number(documentId) },
-    });
-
-    if (!document || document.type !== "PDF") {
-      return res.status(404).json({
-        success: false,
-        status: 404,
-        message: "PDF document not found.",
-      });
-    }
-
-    const wordFilePath = path.join(
-      path.dirname(document.filePath),
-      `${path.basename(document.filePath, path.extname(document.filePath))}.docx`
-    );
-
+        // Fetch the document from the database using Prisma
+        const document = await prisma.document.findUnique({
+          where: { id:documentId },
+        });
+    
+        if (!document || !document.filePath) {
+          return res.status(404).json({ error: "Document not found or file path is missing." });
+        }
+    
+        const absolutePath = path.resolve(document.filePath);
+    
+        if (!fs.existsSync(absolutePath)) {
+          return res.status(404).json({ error: "File does not exist." });
+        }
     // Convert PDF to Word
-    const conversionSuccess = await convertPDFToWord(document.filePath, wordFilePath);
+    const conversionSuccess = await convertPDFToWord(absolutePath);
 
     if (!conversionSuccess) {
       return res.status(500).json({
@@ -61,7 +58,7 @@ export default async function handler(
     await prisma.document.update({
       where: { id: document.id },
       data: {
-        convertedFilePath: wordFilePath,
+        convertedFilePath: conversionSuccess,
         convertedType: "Word",
       },
     });
@@ -70,9 +67,10 @@ export default async function handler(
       success: true,
       status: 200,
       message: "PDF successfully converted to Word.",
-      wordFilePath,
+      conversionSuccess,
     });
   } catch (error) {
+    console.error("Error during PDF to Word conversion:", error);
     return res.status(500).json({
       success: false,
       status: 500,

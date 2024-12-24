@@ -1,73 +1,58 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { PrismaClient } from "@prisma/client";
 import path from "path";
 import fs from "fs";
-import logger from "../../../../lib/logger";
+import { PrismaClient } from "@prisma/client";
 import { convertWordToPDF } from "../../../../helper/convertWordToPDF";
+import logger from "../../../../lib/logger";
 
 const prisma = new PrismaClient();
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
-    return res.status(405).json({
-      success: false,
-      status: 405,
-      message: "Method not allowed.",
-    });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { documentId } = req.body;
+  const { id } = req.body; // Pass the document ID in the request
 
-  if (!documentId) {
-    return res.status(400).json({
-      success: false,
-      status: 400,
-      message: "Document ID is required.",
-    });
+  if (!id) {
+    return res.status(400).json({ error: "Document ID is required." });
   }
 
   try {
+    // Fetch the document from the database using Prisma
     const document = await prisma.document.findUnique({
-      where: { id: documentId },
+      where: { id },
     });
 
     if (!document || !document.filePath) {
-      return res.status(404).json({
-        success: false,
-        status: 404,
-        message: "Document not found or file path is null.",
-      });
+      return res.status(404).json({ error: "Document not found or file path is missing." });
     }
 
-    const wordFilePath = path.resolve(document.filePath);
+    const absolutePath = path.resolve(document.filePath);
 
-    if (!fs.existsSync(wordFilePath)) {
-      return res.status(404).json({
-        success: false,
-        status: 404,
-        message: "Uploaded document file is missing.",
-      });
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ error: "File does not exist." });
     }
 
     // Convert Word file to PDF
-    const pdfFilePath = await convertWordToPDF(wordFilePath);
+    const pdfFilePath = await convertWordToPDF(absolutePath);
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${path.basename(pdfFilePath)}`
-    );
-    fs.createReadStream(pdfFilePath).pipe(res);
+    // Optionally, update the document record with the PDF path and type
+    await prisma.document.update({
+      where: { id },
+      data: {
+        convertedFilePath: pdfFilePath,
+        convertedType: "PDF",
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      pdfFilePath,
+    });
   } catch (error) {
     logger.error("Conversion error:", error);
-    return res.status(500).json({
-      success: false,
-      status: 500,
-      message: "An unexpected error occurred.",
-    });
+    res.status(500).json({ error: "An unexpected error occurred during conversion." });
   } finally {
     await prisma.$disconnect();
   }

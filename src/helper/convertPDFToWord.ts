@@ -1,11 +1,6 @@
 import fs from "fs";
 import path from "path";
 import puppeteer from "puppeteer";
-import { promisify } from "util";
-import { exec } from "child_process";
-
-// Promisified version of exec for handling shell commands
-const execPromise = promisify(exec);
 
 export async function convertPDFToWord(pdfPath: string): Promise<string> {
   try {

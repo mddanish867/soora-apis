@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import formidable, { File } from "formidable";
+import formidable from "formidable";
 import { PrismaClient } from "@prisma/client";
 import path from "path";
 import fs from "fs";

@@ -34,3 +34,14 @@ model Users {
   @@index([email])
   @@index([ssoId])
 }
+
+model Document {
+  id              Int      @id @default(autoincrement())
+  fileName        String?
+  filePath        String?
+  convertedFilePath String?
+  type            String?
+  convertedType   String?
+  createdAt       DateTime? @default(now())
+  updatedAt       DateTime? @updatedAt
+}

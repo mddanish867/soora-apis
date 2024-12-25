@@ -4,17 +4,12 @@ import { PrismaClient } from "@prisma/client";
 import logger from "../../../lib/logger";
 import { randomInt } from "crypto";
 import { sendOtpEmail } from "../../../helper/sendEmail";
-import { cors, runMiddleware } from "@/lib/cors";
+import { corsMiddleware } from '@/lib/cors';
 
 const prisma = new PrismaClient();
 const saltRounds = 10;
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  // Run CORS
-  await runMiddleware(req, res, cors);
+const handler = async (req: NextApiRequest, res: NextApiResponse) => { 
   if (req.method !== "POST") {
     return res
       .status(405)
@@ -127,3 +122,4 @@ export default async function handler(
     await prisma.$disconnect();
   }
 }
+export default corsMiddleware(handler);

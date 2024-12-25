@@ -1,11 +1,40 @@
-// middleware.ts
+// // middleware.ts
+// import { NextResponse } from 'next/server'
+// import type { NextRequest } from 'next/server'
+
+// export function middleware(request: NextRequest) {
+//   const response = NextResponse.next()
+
+//   response.headers.set('Access-Control-Allow-Origin', 'http://localhost:5173')
+//   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+//   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+//   response.headers.set('Access-Control-Allow-Credentials', 'true')
+
+//   return response
+// }
+
+// export const config = {
+//   matcher: '/auth/:path*',
+// }
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
   const response = NextResponse.next()
 
-  response.headers.set('Access-Control-Allow-Origin', 'http://localhost:5173')
+  // Allow both localhost and production domains
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'https://soora-sigma.vercel.app',
+    'http://localhost:3000'
+  ]
+  
+  const origin = request.headers.get('origin')
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin)
+  }
+
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   response.headers.set('Access-Control-Allow-Credentials', 'true')
@@ -14,5 +43,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/auth/:path*',
+  matcher: '/api/:path*',
 }

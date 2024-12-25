@@ -10,6 +10,12 @@ const prisma = new PrismaClient();
 const saltRounds = 10;
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => { 
+  if (req.method === 'OPTIONS') {
+    res.status(200)    
+    .end()
+    .json({ success: true, status: 200, message: "allowed." });
+    return;
+  }
   if (req.method !== "POST") {
     return res
       .status(405)

@@ -1,14 +1,15 @@
+// lib/cors.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import Cors from 'cors';
 import type { CorsOptions } from 'cors';
 
-// Define allowed origins
+// Define allowed origins at the top of the file
 const allowedOrigins = [
-  'http://localhost:5173',          // Local development
-  'http://localhost:3000',          // Local development alternative
-  'https://taskflow-three-mu.vercel.app/',  // Replace with your production frontend URL
-  'https://soora-sigma.vercel.app'  // Your Vercel deployment URL
-];
+  'https://taskflow-three-mu.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://soora-sigma.vercel.app'
+].filter(Boolean);
 
 // Initialize the cors middleware with dynamic origin checking
 const corsOptions: CorsOptions = {
@@ -27,15 +28,10 @@ const corsOptions: CorsOptions = {
     'Authorization',
   ],
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      callback(null, true);
-      return;
-    }
-
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('Blocked by CORS:', origin); // Helpful for debugging
       callback(new Error('Not allowed by CORS'));
     }
   }
@@ -69,6 +65,7 @@ export function corsMiddleware(handler: (req: NextApiRequest, res: NextApiRespon
 
       return handler(req, res);
     } catch (error) {
+      console.error('CORS Error:', error);
       return res.status(403).json({
         success: false,
         message: 'Not allowed by CORS'

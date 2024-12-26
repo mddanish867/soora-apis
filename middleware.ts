@@ -7,8 +7,7 @@ import type { CorsOptions } from 'cors';
 const allowedOrigins = [
   'https://taskflow-three-mu.vercel.app',
   'http://localhost:5173',
-  'http://localhost:3000',
-  'https://soora-sigma.vercel.app'
+  'http://localhost:3000',  
 ].filter(Boolean);
 
 // Initialize the cors middleware with dynamic origin checking

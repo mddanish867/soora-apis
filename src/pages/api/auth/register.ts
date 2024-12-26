@@ -18,7 +18,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   );
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "X-CSRF-Token,X-Requested-with, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
+    "X-CSRF-Token,X-Requested-with, Accept, Origin, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
   );
   res.setHeader("Access-Control-Allow-Credentials", "true");
 

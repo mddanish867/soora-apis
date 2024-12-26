@@ -1,53 +1,50 @@
-// // middleware.ts
-// import { NextResponse } from 'next/server'
-// import type { NextRequest } from 'next/server'
+// lib/cors.ts
+import { NextApiRequest, NextApiResponse } from 'next';
+import Cors from 'cors';
 
-// export function middleware(request: NextRequest) {
-//   const response = NextResponse.next()
+// Initialize the cors middleware
+const cors = Cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Your frontend URL
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'X-CSRF-Token',
+    'X-Requested-With',
+    'Accept',
+    'Accept-Version',
+    'Content-Length',
+    'Content-MD5',
+    'Content-Type',
+    'Date',
+    'X-Api-Version',
+    'Authorization',
+  ],
+});
 
-//   response.headers.set('Access-Control-Allow-Origin', 'http://localhost:5173')
-//   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-//   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-//   response.headers.set('Access-Control-Allow-Credentials', 'true')
-
-//   return response
-// }
-
-// export const config = {
-//   matcher: '/auth/:path*',
-// }
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-
-export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
-
-  // Allow both localhost and production domains
-  const allowedOrigins = [
-    "http://localhost:5173",
-    "https://soora-sigma.vercel.app",
-    "http://localhost:3000",
-  ];
-
-  const origin = request.headers.get("origin");
-
-  if (origin && allowedOrigins.includes(origin)) {
-    response.headers.append("Access-Control-Allow-Origin", "*");
-  }
-
-  response.headers.append(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-  );
-  response.headers.append(
-    "Access-Control-Allow-Headers",
-    "X-CSRF-Token,X-Requested-with, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
-  );
-  response.headers.append("Access-Control-Allow-Credentials", "true");
-
-  return response;
+// Helper method to wait for a middleware to execute before continuing
+function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: any) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
 }
 
-export const config = {
-  matcher: ["/api/:path*"],
-};
+// Updated CORS middleware
+export function corsMiddleware(handler: Function) {
+  return async (req: NextApiRequest, res: NextApiResponse) => {
+    // Run the CORS middleware
+    await runMiddleware(req, res, cors);
+
+    // Handle OPTIONS request
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+
+    // Call the actual handler
+    return handler(req, res);
+  };
+}

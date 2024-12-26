@@ -5,30 +5,11 @@ import logger from "../../../lib/logger";
 import { randomInt } from "crypto";
 import { sendOtpEmail } from "../../../helper/sendEmail";
 import { corsMiddleware } from "@/lib/cors";
-
 const prisma = new PrismaClient();
 const saltRounds = 10;
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "X-CSRF-Token,X-Requested-with, Accept, Origin, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
-  );
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") {
-    res
-      .status(200)
-      .end()
-      .json({ success: true, status: 200, message: "allowed." });
-    return;
-  }
+  
   if (req.method !== "POST") {
     return res
       .status(405)

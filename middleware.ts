@@ -4,7 +4,7 @@ import Cors from 'cors';
 
 // Initialize the cors middleware
 const cors = Cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Your frontend URL
+  origin: '*', 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [

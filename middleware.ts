@@ -32,7 +32,7 @@ export function middleware(request: NextRequest) {
   const origin = request.headers.get("origin");
 
   if (origin && allowedOrigins.includes(origin)) {
-    response.headers.append('Access-Control-Allow-Origin', origin);
+    response.headers.append('Access-Control-Allow-Origin', '*');
   }
 
   response.headers.append(

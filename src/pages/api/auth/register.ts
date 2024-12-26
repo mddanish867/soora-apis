@@ -4,16 +4,29 @@ import { PrismaClient } from "@prisma/client";
 import logger from "../../../lib/logger";
 import { randomInt } from "crypto";
 import { sendOtpEmail } from "../../../helper/sendEmail";
-import { corsMiddleware } from '@/lib/cors';
+import { corsMiddleware } from "@/lib/cors";
 
 const prisma = new PrismaClient();
 const saltRounds = 10;
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => { 
-  if (req.method === 'OPTIONS') {
-    res.status(200)    
-    .end()
-    .json({ success: true, status: 200, message: "allowed." });
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-CSRF-Token,X-Requested-with, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
+  );
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
+    res
+      .status(200)
+      .end()
+      .json({ success: true, status: 200, message: "allowed." });
     return;
   }
   if (req.method !== "POST") {
@@ -26,13 +39,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   // Validate input fields
   if (!email || !password || !username) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        status: 400,
-        message: "All fields are required.",
-      });
+    return res.status(400).json({
+      success: false,
+      status: 400,
+      message: "All fields are required.",
+    });
   }
 
   try {
@@ -99,13 +110,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       // Rollback user creation if OTP email fails
       await prisma.users.delete({ where: { email } });
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          status: 500,
-          message: "Failed to send email with OTP.",
-        });
+      return res.status(500).json({
+        success: false,
+        status: 500,
+        message: "Failed to send email with OTP.",
+      });
     }
   } catch (err) {
     // Centralized error handling
@@ -117,15 +126,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         .json({ success: false, status: 500, message: err.message });
     }
 
-    return res
-      .status(500)
-      .json({
-        success: false,
-        status: 500,
-        message: "An unexpected error occurred.",
-      });
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "An unexpected error occurred.",
+    });
   } finally {
     await prisma.$disconnect();
   }
-}
+};
 export default corsMiddleware(handler);

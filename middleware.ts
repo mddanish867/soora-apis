@@ -32,22 +32,22 @@ export function middleware(request: NextRequest) {
   const origin = request.headers.get("origin");
 
   if (origin && allowedOrigins.includes(origin)) {
-    response.headers.append('Access-Control-Allow-Origin', '*');
+    response.headers.append("Access-Control-Allow-Origin", "*");
   }
 
   response.headers.append(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS, PATCH"
   );
   response.headers.append(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token,X-Requested-with, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+    "Access-Control-Allow-Headers",
+    "X-CSRF-Token,X-Requested-with, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
   );
-  response.headers.append('Access-Control-Allow-Credentials', "true");
+  response.headers.append("Access-Control-Allow-Credentials", "true");
 
   return response;
 }
 
 export const config = {
-  matcher: ['/api/:path*'],
+  matcher: ["/api/:path*"],
 };

@@ -29,13 +29,22 @@ function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) 
 
 export function corsMiddleware(handler: Function) {
   return async (req: NextApiRequest, res: NextApiResponse) => {
-    try {
-      await runMiddleware(req, res, cors);
-      if (req.method === "OPTIONS") return res.status(200).end();
-      return handler(req, res);
-    } catch (error) {
-      console.error("CORS Error:", error);
-      return res.status(500).json({ error: "CORS error occurred" });
+    const origin =
+      process.env.NODE_ENV === 'development'
+        ? 'http://localhost:5173'
+        : 'https://soora-sigma.vercel.app';
+
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    if (req.method === 'OPTIONS') {
+      // Stop preflight requests from reaching the actual handler
+      return res.status(204).end();
     }
+
+    return handler(req, res);
   };
 }
+

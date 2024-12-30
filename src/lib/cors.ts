@@ -1,49 +1,41 @@
-import Cors from "cors";
 import type { NextApiRequest, NextApiResponse } from "next";
+import Cors from "cors";
 
-// Initialize CORS middleware
+const allowedOrigins =
+  process.env.NODE_ENV === "development"
+    ? ["http://localhost:5173", "http://localhost:3000"]
+    : ["https://soora-sigma.vercel.app"];
+
 const cors = Cors({
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  credentials: true,
   origin: (origin, callback) => {
-    console.log("Origin received:", origin);
-    const allowedOrigins = [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "https://soora-sigma.vercel.app",
-      "https://taskflow-three-mu.vercel.app",
-    ];
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
+      callback(null, origin); // Dynamically set the origin
     } else {
-      console.error("Blocked Origin:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  credentials: true,
 });
 
-// Run CORS middleware
-const runMiddleware = (req: NextApiRequest, res: NextApiResponse, fn: Function) =>
-  new Promise((resolve, reject) => {
+function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) {
+  return new Promise((resolve, reject) => {
     fn(req, res, (result: any) => {
-      if (result instanceof Error) {
-        reject(result);
-      } else {
-        resolve(result);
-      }
+      if (result instanceof Error) return reject(result);
+      return resolve(result);
     });
   });
+}
 
-// Wrap your API handler with the CORS middleware
-export const corsMiddleware = (handler: Function) =>
-  async (req: NextApiRequest, res: NextApiResponse) => {
+export function corsMiddleware(handler: Function) {
+  return async (req: NextApiRequest, res: NextApiResponse) => {
     try {
       await runMiddleware(req, res, cors);
-      if (req.method === "OPTIONS") {
-        return res.status(200).end(); // Allow OPTIONS preflight requests
-      }
+      if (req.method === "OPTIONS") return res.status(200).end();
       return handler(req, res);
-    } catch (err) {
-      return res.status(403).json({ success: false, message: err });
+    } catch (error) {
+      console.error("CORS Error:", error);
+      return res.status(500).json({ error: "CORS error occurred" });
     }
   };
+}

@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import Cors from "cors";
 
-const allowedOrigins = ["https://soora-sigma.vercel.app"];
+const allowedOrigins = ["http://localhost:5173", "http://localhost:3000", "https://taskflow-three-mu.vercel.app"];
+  // process.env.NODE_ENV === "development"
+  //   ? ["http://localhost:5173", "http://localhost:3000"]
+  //   : ["https://soora-sigma.vercel.app"];
 
 const cors = Cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],

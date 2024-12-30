@@ -4,9 +4,10 @@ import { PrismaClient } from "@prisma/client";
 import logger from "../../../lib/logger";
 import { randomInt } from "crypto";
 import { sendOtpEmail } from "../../../helper/sendEmail";
-import { corsMiddleware } from "@/lib/cors";
+import { allowCors } from "@/lib/cors";
 const prisma = new PrismaClient();
 const saltRounds = 10;
+
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   
@@ -116,4 +117,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     await prisma.$disconnect();
   }
 };
-export default corsMiddleware(handler);
+export default allowCors(handler);

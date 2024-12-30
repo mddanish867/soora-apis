@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode:true,
-   async headers() {
+  async headers() {
     return [
       {
         // matching all API routes

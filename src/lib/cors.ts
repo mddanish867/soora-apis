@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 
 export const allowCors = (fn:(req: NextApiRequest, res: NextApiResponse) => Promise<void>) => async (req:NextApiRequest, res:NextApiResponse) => {
   res.setHeader('Access-Control-Allow-Credentials', "true")
-  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
   // another common pattern
   // res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')

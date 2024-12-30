@@ -5,7 +5,7 @@ export function corsMiddleware(handler: Function) {
     const origin =
       process.env.NODE_ENV === "development"
         ? "http://localhost:5173"
-        : "https://soora-sigma.vercel.app";
+        : "https://taskflow-three-mu.vercel.app";
 
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader(

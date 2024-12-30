@@ -78,7 +78,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import Cors from "cors";
 
 const cors = Cors({
-  origin: "http://localhost:5173",
+  origin: "https://taskflow-three-mu.vercel.app",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
 });

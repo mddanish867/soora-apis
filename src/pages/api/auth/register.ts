@@ -4,35 +4,9 @@ import { PrismaClient } from "@prisma/client";
 import logger from "../../../lib/logger";
 import { randomInt } from "crypto";
 import { sendOtpEmail } from "../../../helper/sendEmail";
+import { corsMiddleware } from "@/lib/cors";
 const prisma = new PrismaClient();
 const saltRounds = 10;
-
-// At the top of your file, add:
-type HandlerFunction = (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
-
-export const allowCors = (handler: HandlerFunction) =>
-  async (req: NextApiRequest, res: NextApiResponse) => {
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Content-Type, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version'
-    );
-
-    if (req.method === 'OPTIONS') {
-      res.status(200).end();
-      return;
-    }
-
-    try {
-      return await handler(req, res);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Internal Server Error' });
-    }
-  };
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   
@@ -142,4 +116,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     await prisma.$disconnect();
   }
 };
-export default allowCors(handler);
+export default corsMiddleware(handler);

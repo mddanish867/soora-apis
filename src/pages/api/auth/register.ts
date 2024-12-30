@@ -11,20 +11,23 @@ const saltRounds = 10;
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    res.setHeader(
-      'Access-Control-Allow-Origin',
-      process.env.NODE_ENV === 'development'
-        ? 'http://localhost:5173'
-        : 'https://taskflow-three-mu.vercel.app'
-    );
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization'
-    );
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    return res.status(204).end();
+  const allowedOrigins = [
+    "https://taskflow-three-mu.vercel.app",
+    "http://localhost:5173", // for development
+  ];
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin || '')) {
+    res.setHeader("Access-Control-Allow-Origin", origin || ''); // Match exact origin
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+
+    if (req.method === "OPTIONS") {
+      return res.status(204).end(); // Preflight request
+    }
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "null"); // Fallback
   }
 
   

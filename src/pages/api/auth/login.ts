@@ -3,13 +3,11 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { serialize } from "cookie";
 import { PrismaClient } from "@prisma/client";
+import { corsMiddleware } from "../../../lib/cors";
 
 const prisma = new PrismaClient();
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     if (req.method !== "POST") {
       return res
@@ -60,19 +58,19 @@ export default async function handler(
     }
 
     const accessToken = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email || '', 
-        name: user.username || '' 
+      {
+        userId: user.id,
+        email: user.email || "",
+        name: user.username || "",
       },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
     const refreshToken = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email || '' 
+      {
+        userId: user.id,
+        email: user.email || "",
       },
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: "7d" }
@@ -117,4 +115,5 @@ export default async function handler(
   } finally {
     await prisma.$disconnect();
   }
-}
+};
+export default corsMiddleware(handler);

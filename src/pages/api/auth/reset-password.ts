@@ -2,14 +2,12 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
 import logger from "../../../lib/logger";
 import bcrypt from "bcryptjs";
+import { corsMiddleware } from "../../../lib/cors";
 
 const prisma = new PrismaClient();
 const saltRounds = 10;
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "POST") {
     return res
       .status(405)
@@ -49,7 +47,7 @@ export default async function handler(
       return res.status(200).json({
         success: true,
         status: 200,
-        message: "Password as been reset successfully.",
+        message: "Password has been reset successfully.",
       });
     } else {
       return res.status(500).json({
@@ -79,3 +77,4 @@ export default async function handler(
     await prisma.$disconnect();
   }
 }
+export default corsMiddleware(handler);

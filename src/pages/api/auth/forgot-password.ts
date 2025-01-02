@@ -3,13 +3,10 @@ import { PrismaClient, Prisma } from "@prisma/client";
 import logger from "../../../lib/logger";
 import { randomInt } from "crypto";
 import { sendOtpEmail } from "../../../helper/sendEmail";
-
+import { corsMiddleware } from "../../../lib/cors";
 const prisma = new PrismaClient();
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "POST") {
     return res.status(405).json({
       success: false,
@@ -121,3 +118,4 @@ export default async function handler(
     await prisma.$disconnect();
   }
 }
+export default corsMiddleware(handler);

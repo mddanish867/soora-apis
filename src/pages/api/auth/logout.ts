@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { serialize } from "cookie";
+import { corsMiddleware } from "../../../lib/cors";
 
 const cookieOptions = {
   httpOnly: true,
@@ -9,10 +10,7 @@ const cookieOptions = {
   maxAge: -1,
 };
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     if (req.method !== "POST") {
       return res.status(405).json({ 
@@ -41,3 +39,4 @@ export default async function handler(
     });
   }
 }
+export default corsMiddleware(handler);

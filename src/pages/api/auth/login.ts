@@ -98,6 +98,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       success: true,
       status: 200,
       message: "Logged in successfully",
+      access_token: accessToken,
       user: {
         id: user.id,
         email: user.email,

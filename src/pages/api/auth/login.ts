@@ -61,7 +61,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       {
         userId: user.id,
         email: user.email || "",
-        name: user.username || "",
+        username: user.username || "",
+        name: user.name || "",
       },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }

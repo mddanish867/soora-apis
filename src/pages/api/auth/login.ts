@@ -105,11 +105,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const uaResult = parser.getResult();
     const device = uaResult.device.model || uaResult.os.name || "Unknown";
     const os = uaResult.os.name || "Unknown";
-    const browser = uaResult.browser.name || "Unknown";
-
-    // Optional: Get location from IP (you can integrate with a geolocation service)
-    // const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    // const location = typeof ip === "string" ? ip : "Unknown";
+    const browser = uaResult.browser.name || "Unknown";    
 
      // Get location from IP
      const getClientIp = (req: NextApiRequest): string | undefined => {
@@ -134,19 +130,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     
       return ipAddress;
-    };
-    
+    };  
     
     
     const ipAddress = getClientIp(req);
-
-    // Add logging to debug the extracted IP
-    console.log("Extracted IP Address:", ipAddress);
     
     let location = '';
     if (ipAddress) {
-      location = await getLocationFromIP(ipAddress);
-      console.log(location)
+      location = await getLocationFromIP(ipAddress);      
     } else {
       console.error("IP Address is undefined");
     }

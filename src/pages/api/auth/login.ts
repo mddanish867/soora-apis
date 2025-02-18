@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { serialize } from "cookie";
 import { PrismaClient } from "@prisma/client";
 import { corsMiddleware } from "../../../lib/cors";
+import { getLocationFromIP } from "../../../services/locationService";
 
 const prisma = new PrismaClient();
 
@@ -107,8 +108,49 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const browser = uaResult.browser.name || "Unknown";
 
     // Optional: Get location from IP (you can integrate with a geolocation service)
-    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    const location = typeof ip === "string" ? ip : "Unknown";
+    // const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    // const location = typeof ip === "string" ? ip : "Unknown";
+
+     // Get location from IP
+     const getClientIp = (req: NextApiRequest): string | undefined => {
+      const xForwardedFor = req.headers["x-forwarded-for"];
+      
+      let ipAddress;
+    
+      if (typeof xForwardedFor === "string") {
+        // If it's a string, split and take the first one
+        ipAddress = xForwardedFor.split(",")[0].trim();
+      } else if (Array.isArray(xForwardedFor)) {
+        // If it's an array, take the first item and split again for safety
+        ipAddress = xForwardedFor[0].split(",")[0].trim();
+      } else {
+        // Fallback to remoteAddress if x-forwarded-for is not present
+        ipAddress = req.connection?.remoteAddress || req.socket?.remoteAddress;
+      }
+    
+      // Handle IPv6 loopback (::1) by converting to IPv4 loopback (127.0.0.1)
+      if (ipAddress === "::1") {
+        ipAddress = "127.0.0.1";
+      }
+    
+      return ipAddress;
+    };
+    
+    
+    
+    const ipAddress = getClientIp(req);
+
+    // Add logging to debug the extracted IP
+    console.log("Extracted IP Address:", ipAddress);
+    
+    let location = '';
+    if (ipAddress) {
+      location = await getLocationFromIP(ipAddress);
+      console.log(location)
+    } else {
+      console.error("IP Address is undefined");
+    }
+    
 
     // Save session in the database
     await prisma.userSession.create({

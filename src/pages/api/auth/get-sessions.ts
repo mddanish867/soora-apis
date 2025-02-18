@@ -17,6 +17,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
+  //  const access_token = localStorage.getItem('access_token');
+  // if (!access_token) {
+  //   return res.status(401).json({ message: "Unauthorized" });
+  // }
+
+
   let decoded: any;
   try {
     decoded = jwt.verify(access_token, process.env.JWT_SECRET!);
@@ -29,8 +35,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const sessions = await prisma.userSession.findMany({
     where: {
       userId,
-      isActive: true,
-    },
+      },
   });
 
   return res.status(200).json({ sessions });

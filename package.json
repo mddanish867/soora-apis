@@ -22,7 +22,7 @@
     "jsonwebtoken": "^9.0.2",
     "mammoth": "^1.8.0",
     "nanoid": "^5.0.9",
-    "next": "15.1.2",
+    "next": "^14.1.0",
     "next-auth": "^4.24.11",
     "prisma": "^6.1.0",
     "puppeteer": "^23.11.1",

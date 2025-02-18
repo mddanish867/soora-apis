@@ -66,3 +66,10 @@ Invalid `prisma.users.findUnique()` invocation:
 Can't reach database server at `aws-0-ap-southeast-1.pooler.supabase.com:6543`
 
 Please make sure your database server is running at `aws-0-ap-southeast-1.pooler.supabase.com:6543`.
+2025-02-17T12:21:56.966Z [31merror[39m: Error fetching user details: 
+Invalid `prisma.users.findUnique()` invocation:
+
+
+Can't reach database server at `aws-0-ap-southeast-1.pooler.supabase.com:6543`
+
+Please make sure your database server is running at `aws-0-ap-southeast-1.pooler.supabase.com:6543`.

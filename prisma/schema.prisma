@@ -35,6 +35,17 @@ model Users {
   @@index([ssoId])
 }
 
+model UserSession {
+  id        String   @id @default(uuid())
+  userId    String
+  device    String   // e.g., "iPhone 13", "Windows"
+  os        String   // e.g., "iOS", "Windows"
+  browser   String   // e.g., "Safari", "Chrome"
+  location  String?  // e.g., "London, UK", "New York, USA"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
 model Document {
   id              Int      @id @default(autoincrement())
   fileName        String?

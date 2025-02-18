@@ -1,3 +1,4 @@
+const UAParser = require("ua-parser-js");
 import { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -95,6 +96,32 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }),
     ]);
 
+    // --- Capture Session Information ---
+    // Extract user agent details
+    const uaString = req.headers["user-agent"] || "";
+    // Create a new parser instance correctly
+    const parser = new UAParser(uaString);
+    const uaResult = parser.getResult();
+    const device = uaResult.device.model || uaResult.os.name || "Unknown";
+    const os = uaResult.os.name || "Unknown";
+    const browser = uaResult.browser.name || "Unknown";
+
+    // Optional: Get location from IP (you can integrate with a geolocation service)
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    const location = typeof ip === "string" ? ip : "Unknown";
+
+    // Save session in the database
+    await prisma.userSession.create({
+      data: {
+        userId: user.id,
+        device,
+        os,
+        browser,
+        location, // You might use a service to convert IP to a friendly location
+      },
+    });
+    // --- End Capture ---
+
     return res.status(200).json({
       success: true,
       status: 200,
@@ -118,4 +145,5 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     await prisma.$disconnect();
   }
 };
+
 export default corsMiddleware(handler);

@@ -1,5 +1,5 @@
-import { setupProject } from "../../../lib/setupProject";
-import { corsMiddleware } from "../../../lib/cors";
+import { setupProject } from "../../../../lib/setupProject";
+import { corsMiddleware } from "../../../../lib/cors";
 import { NextApiRequest, NextApiResponse } from "next";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {

@@ -1,3 +1,4 @@
+// Simplified passportMiddleware.js
 const session = require('express-session');
 const passport = require('./passport');
 
@@ -7,18 +8,17 @@ module.exports = (req, res, next) => {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // False in dev
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 24 * 60 * 60 * 1000,
     },
   });
 
+  // Chain middleware functions but ensure each calls next()
   sessionMiddleware(req, res, () => {
     passport.initialize()(req, res, () => {
-      passport.session()(req, res, () => {
-        next();
-      });
+      passport.session()(req, res, next);
     });
   });
 };

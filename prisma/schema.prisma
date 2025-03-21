@@ -17,6 +17,7 @@ model Users {
   name        String?
   picture     String?
   ssoProvider String?
+  googleId    String?    @unique
   ssoId       String?
   lastLogin   DateTime @default(now())
   otp          String? // OTP for verification

@@ -22,6 +22,8 @@ interface JwtPayload {
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
+    console.log('JWT_SECRET:', process.env.JWT_SECRET);
+    console.log("Cookies: ", req.headers.cookie);
     if (req.method !== 'GET') {
       return res.status(405).json({ message: 'Method not allowed' });
     }

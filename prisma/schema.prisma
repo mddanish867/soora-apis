@@ -52,12 +52,39 @@ model Document {
   fileName        String?
   filePath        String?
   convertedFilePath String?
-  type            String?
+  uploadedtype    String?
   convertedType   String?
+  fileSize        BigInt?
+  pageCount       Int?
+  context         String?
+  insights        String?
+  sentiment       String?
+  entities        Json?
+  userId          String?
+  topic           String?
   createdAt       DateTime? @default(now())
   updatedAt       DateTime? @updatedAt
 }
 
+model UploadedFile {
+  id        String   @id @default(uuid())
+  name      String?
+  content   String?
+  type      String?
+  createdAt DateTime @default(now())
+  userId    String?
+  chats     Chat[]
+}
+
+model Chat {
+  id        String      @id @default(uuid())
+  fileId    String
+  message   String?
+  response  String?
+  userId    String?
+  createdAt DateTime    @default(now())
+  file      UploadedFile @relation(fields: [fileId], references: [id])
+}
 
 model AccountDeletions {
   id        String   @id @default(cuid())

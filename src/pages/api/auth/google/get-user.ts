@@ -5,45 +5,40 @@ import { corsMiddleware } from '../../../../lib/cors';
 
 const prisma = new PrismaClient();
 
-// Improved cookie extraction function
-const extractCookieValue = (cookies: string | undefined, name: string): string | null => {
-  if (!cookies) return null;
-  const match = cookies.match(new RegExp(`(^| )${name}=([^;]+)`));
-  return match ? decodeURIComponent(match[2]) : null;
-};
-
 interface JwtPayload {
   userId: string;
   email: string;
-  username: string;
-  name: string;
-  picture?: string;  
+  username?: string;
+  name?: string;
+  picture?: string;
 }
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    console.log('JWT_SECRET:', process.env.JWT_SECRET);
-    console.log("Cookies: ", req.headers.cookie);
-    if (req.method !== 'GET') {
+    if (req.method !== 'POST') { // POST kar rahe hain kyunki refresh_token body mein bhejenge
       return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    // Extract accessToken from cookies with improved method
-    const accessToken = extractCookieValue(req.headers.cookie, 'access_token');
+    // Extract refreshToken from request body
+    const { refreshToken } = req.body;
 
-    if (!accessToken) {
-      return res.status(401).json({ message: 'No access token provided' });
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'No refresh token provided' });
     }
 
-    // Verify the token (using jwt library)
+    // Verify the refresh token
+    if (!process.env.JWT_REFRESH_SECRET) {
+      throw new Error('JWT_REFRESH_SECRET is not defined');
+    }
+
     try {
-      const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET!) as JwtPayload;
+      const decodedToken = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET) as JwtPayload;
 
       // Extract email from token
       const email = decodedToken.email;
 
       if (!email) {
-        return res.status(400).json({ message: 'Invalid token: missing email' });
+        return res.status(400).json({ message: 'Invalid refresh token: missing email' });
       }
 
       // Fetch user by email
@@ -51,21 +46,43 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         where: { email },
       });
 
-      if (user) {
-        return res.status(200).json({
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Generate a new access token
+      if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is not defined');
+      }
+
+      const newAccessToken = jwt.sign(
+        {
+          userId: user.id,
+          email: user.email,
+          username: user.username,
+          name: user.name,
+          picture: user.picture || '',
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      // Return user data with new access token
+      return res.status(200).json({
+        accessToken: newAccessToken,
+        refreshToken, // Same refresh token wapas bhejo
+        user: {
           id: user.id,
           email: user.email,
           username: user.username,
           name: user.name,
-          picture: user.picture || null, // Use profilePicture from DB
-        });
-      } else {
-        return res.status(404).json({ message: 'User not found' });
-      }
+          picture: user.picture || null,
+        },
+      });
     } catch (error: any) {
-      console.error('Token verification failed:', error);
+      console.error('Refresh token verification failed:', error);
       return res.status(401).json({
-        message: 'Invalid or expired access token',
+        message: 'Invalid or expired refresh token',
         error: error.message || 'Token verification failed',
       });
     }
@@ -76,7 +93,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   } finally {
-    // Ensure Prisma connection is properly handled
     await prisma.$disconnect();
   }
 };

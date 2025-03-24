@@ -71,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: {
         fileName: file.originalFilename,
         filePath: "",
-        type: "word",
+        //type: "word",
       },
     });
 

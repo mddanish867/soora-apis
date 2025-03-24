@@ -24,6 +24,10 @@ const handler =  async (
       return res.status(404).json({ message: 'File not found' });
     }
 
+    if (!file.content) {
+      return res.status(400).json({ message: 'File content is empty' });
+    }
+
     const response = await chatWithFile(file.content, message);
 
     const chat = await prisma.chat.create({
